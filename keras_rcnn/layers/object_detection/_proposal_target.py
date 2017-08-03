@@ -35,8 +35,8 @@ class ProposalTarget(keras.engine.topology.Layer):
         gt_boxes, im_info = inputs
 
         # TODO: Fix usage of batch index
-        shape = im_info[0, :2]
-        scale = im_info[0, 2]
+        shape = im_info[:2]
+        scale = im_info[2]
 
         # 1. Generate proposals from bbox deltas and shifted anchors
         all_anchors = keras_rcnn.backend.shift(shape, 16)
