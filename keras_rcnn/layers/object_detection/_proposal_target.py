@@ -35,8 +35,8 @@ class ProposalTarget(keras.engine.topology.Layer):
         gt_boxes, im_info = inputs
 
         # TODO: Fix usage of batch index
-        shape = im_info[:2]
-        scale = im_info[2]
+        shape = im_info[0, :2]
+        scale = im_info[0, 2]
 
         # 1. Generate proposals from bbox deltas and shifted anchors
         all_anchors = keras_rcnn.backend.shift(shape, 16)
@@ -52,7 +52,13 @@ class ProposalTarget(keras.engine.topology.Layer):
         # Convert fixed anchors in (x, y, w, h) to (dx, dy, dw, dh)
         bbox_reg_targets = keras_rcnn.backend.bbox_transform(anchors, gt_boxes)
 
-        return labels, bbox_reg_targets
+        #TODO: Why is bbox_reg_targets' shape (5, ?, 4)? Why is gt_boxes' shape (None, None, 4) and not (None, 4)?
+        bbox_reg_targets = keras.backend.reshape(bbox_reg_targets, (-1, 4))
+        return [labels, bbox_reg_targets]
 
     def compute_output_shape(self, input_shape):
-        return (None,), (None, 4)
+        return [(None,), (None, 4)]
+
+    def compute_mask(self, inputs, mask=None):
+        # unfortunately this is required
+        return 2 * [None]
