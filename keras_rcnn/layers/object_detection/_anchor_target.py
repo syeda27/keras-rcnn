@@ -14,7 +14,7 @@ class AnchorTarget(keras.layers.Layer):
         positive_overlap: IoU threshold above which labels should be given positive label
 
     # Input shape
-        (# of samples, 4), (width of feature map, height of feature map, scale)
+        (# of batches, width of feature map, height of feature map, 2 * # of anchors), (# of samples, 4), (width of feature map, height of feature map, channels)
 
     # Output shape
         (# of samples, ), (# of samples, 4)
