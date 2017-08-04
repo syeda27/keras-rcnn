@@ -1,6 +1,6 @@
-from .losses import Classification, Regression
+from .losses import ClassificationLoss, RegressionLoss
 
-from .object_detection import (ObjectProposal)
+from .object_detection import ObjectProposal
 
 from .object_detection import (AnchorTarget)
 

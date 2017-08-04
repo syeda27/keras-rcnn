@@ -1,45 +1,38 @@
 import keras.layers
 
+import keras_rcnn.backend
 
-class Classification(keras.layers.Layer):
+
+class ClassificationLoss(keras.layers.Layer):
     def __init__(self, anchors, **kwargs):
         self.anchors = anchors
 
-        self.is_placeholder = True
+        super(ClassificationLoss, self).__init__(**kwargs)
 
-        super(Classification, self).__init__(**kwargs)
+    def _loss(self, rpn_labels, rpn_classification):
+        rpn_classification = keras.backend.reshape(rpn_classification, [-1, 2])
+        rpn_classification = keras.backend.gather(rpn_classification, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
+        rpn_labels         = keras.backend.gather(rpn_labels, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
+        loss               = keras.backend.mean(keras.backend.categorical_crossentropy(rpn_labels, rpn_classification))
 
-    def _loss(self, y_true, y_pred):
-        # Binary classification loss
-        x, y = y_pred[:, :, :, :], y_true[:, :, :, self.anchors:]
-
-        a = y_true[:, :, :, :self.anchors] * keras.backend.binary_crossentropy(x, y)
-        a = keras.backend.sum(a)
-
-        # Divided by anchor overlaps
-        b = keras.backend.epsilon() + y_true[:, :, :, :self.anchors]
-        b = keras.backend.sum(b)
-
-        return 1.0 * (a / b)
+        return loss
 
     def call(self, inputs):
-        y_true, y_pred = inputs
+        rpn_labels, rpn_classification = inputs
 
-        loss = self._loss(y_true, y_pred)
+        loss = self._loss(rpn_labels, rpn_classification)
 
         self.add_loss(loss, inputs=inputs)
 
-        return y_pred
+        return loss
 
 
 
-class Regression(keras.layers.Layer):
+class RegressionLoss(keras.layers.Layer):
     def __init__(self, anchors, **kwargs):
         self.anchors = anchors
 
-        self.is_placeholder = True
-
-        super(Regression, self).__init__(**kwargs)
+        super(RegressionLoss, self).__init__(**kwargs)
 
     def _loss(self, y_true, y_pred):
         # Robust L1 Loss

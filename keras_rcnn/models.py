@@ -33,12 +33,15 @@ class RCNN(keras.models.Model):
         proposals                        = keras_rcnn.layers.ObjectProposal(maximum_proposals=rois)([im_info, rpn_regression, rpn_classification])
         rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.AnchorTarget()([gt_boxes, im_info])
 
+        rpn_classification_loss = keras_rcnn.layers.ClassificationLoss(anchors=num_anchors, name="rpn_classification_loss")([rpn_labels, rpn_classification])
+        #rpn_regression_loss     = keras_rcnn.layers.RegressionLoss(name="rpn_bbox_loss")([rpn_bbox_reg_targets, rpn_regression])
+
         # Apply the classifiers on the proposed regions
         slices = keras_rcnn.layers.ROI((7, 7))([image, proposals])
 
         [score, boxes] = heads(slices)
 
-        super(RCNN, self).__init__(inputs, [rpn_prediction, score, boxes, rpn_labels, rpn_bbox_reg_targets])
+        super(RCNN, self).__init__(inputs, [rpn_prediction, score, boxes, rpn_classification_loss])
 
 
 class ResNet50RCNN(RCNN):
