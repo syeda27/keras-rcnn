@@ -31,7 +31,7 @@ class RCNN(keras.models.Model):
         rpn_prediction = keras.layers.concatenate([rpn_classification, rpn_regression])
 
         proposals                        = keras_rcnn.layers.ObjectProposal(maximum_proposals=rois)([im_info, rpn_regression, rpn_classification])
-        rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.ProposalTarget()([gt_boxes, im_info])
+        rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.AnchorTarget()([gt_boxes, im_info])
 
         rpn_classification_loss = keras_rcnn.layers.ClassificationLoss(anchors=num_anchors, name="rpn_classification_loss")([rpn_labels, rpn_classification])
         #rpn_regression_loss     = keras_rcnn.layers.RegressionLoss(name="rpn_bbox_loss")([rpn_bbox_reg_targets, rpn_regression])
