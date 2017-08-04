@@ -45,8 +45,7 @@ class RegressionLoss(keras.layers.Layer):
         mask = keras.backend.less_equal(keras.backend.abs(x), 1.0)
         mask = keras.backend.cast(mask, keras.backend.floatx())
 
-        a_x = keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, 0))
-        a_x = keras.backend.cast(a_x, keras.backend.floatx())
+        a_x = keras.backend.cast(keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, 0))[1][0], keras.backend.floatx())
 
         a_y = mask * (0.5 * x * x) + (1 - mask) * (keras.backend.abs(x) - 0.5)
 
