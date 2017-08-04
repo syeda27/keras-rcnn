@@ -5,7 +5,7 @@ import tensorflow
 import keras_rcnn.backend
 
 
-class ProposalTarget(keras.engine.topology.Layer):
+class AnchorTarget(keras.engine.topology.Layer):
     """Calculate proposal anchor targets and corresponding labels (label: 1 is positive, 0 is negative, -1 is do not care) for ground truth boxes
 
     # Arguments
@@ -20,16 +20,17 @@ class ProposalTarget(keras.engine.topology.Layer):
     # Output shape
         (# of samples, ), (# of samples, 4)
     """
-    def __init__(self, allowed_border=0, clobber_positives=False, negative_overlap=0.3, positive_overlap=0.7, **kwargs):
-        self.allowed_border    = allowed_border
-        self.clobber_positives = clobber_positives
-        self.negative_overlap  = negative_overlap
-        self.positive_overlap  = positive_overlap
 
-        super(ProposalTarget, self).__init__(**kwargs)
+    def __init__(self, allowed_border=0, clobber_positives=False, negative_overlap=0.3, positive_overlap=0.7, **kwargs):
+        self.allowed_border = allowed_border
+        self.clobber_positives = clobber_positives
+        self.negative_overlap = negative_overlap
+        self.positive_overlap = positive_overlap
+
+        super(AnchorTarget, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        super(ProposalTarget, self).build(input_shape)
+        super(AnchorTarget, self).build(input_shape)
 
     def call(self, inputs, **kwargs):
         gt_boxes, im_info = inputs
@@ -52,7 +53,7 @@ class ProposalTarget(keras.engine.topology.Layer):
         # Convert fixed anchors in (x, y, w, h) to (dx, dy, dw, dh)
         bbox_reg_targets = keras_rcnn.backend.bbox_transform(anchors, gt_boxes)
 
-        #TODO: Why is bbox_reg_targets' shape (5, ?, 4)? Why is gt_boxes' shape (None, None, 4) and not (None, 4)?
+        # TODO: Why is bbox_reg_targets' shape (5, ?, 4)? Why is gt_boxes' shape (None, None, 4) and not (None, 4)?
         bbox_reg_targets = keras.backend.reshape(bbox_reg_targets, (-1, 4))
         return [labels, bbox_reg_targets]
 
