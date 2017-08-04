@@ -30,7 +30,7 @@ class RCNN(keras.models.Model):
 
         rpn_prediction = keras.layers.concatenate([rpn_classification, rpn_regression])
 
-        proposals                        = keras_rcnn.layers.ObjectProposal(rois)([im_info, rpn_regression, rpn_classification])
+        proposals                        = keras_rcnn.layers.ObjectProposal(maximum_proposals=rois)([im_info, rpn_regression, rpn_classification])
         rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.ProposalTarget()([gt_boxes, im_info])
 
         # Apply the classifiers on the proposed regions
