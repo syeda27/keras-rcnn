@@ -61,7 +61,7 @@ class AnchorTarget(keras.layers.Layer):
         return [labels, bbox_reg_targets]
 
     def compute_output_shape(self, input_shape):
-        return [(None,), (None,)]
+        return [(None,), (None, 4)]
 
     def compute_mask(self, inputs, mask=None):
         # unfortunately this is required

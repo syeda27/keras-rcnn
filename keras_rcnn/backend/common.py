@@ -203,8 +203,8 @@ def inside_image(boxes, im_info, allowed_border=0):
     indices = keras_rcnn.backend.where(
         (boxes[:, 0] >= -allowed_border) &
         (boxes[:, 1] >= -allowed_border) &
-        (boxes[:, 2] < allowed_border + im_info[1]) & # width
-        (boxes[:, 3] < allowed_border + im_info[0])   # height
+        (boxes[:, 2] < allowed_border + im_info[-2]) & # width
+        (boxes[:, 3] < allowed_border + im_info[-3])   # height
     )
 
     indices = keras.backend.cast(indices, "int32")
