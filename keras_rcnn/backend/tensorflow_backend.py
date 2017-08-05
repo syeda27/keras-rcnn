@@ -246,7 +246,7 @@ def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OV
     labels = ones * -1
     zeros = keras.backend.zeros_like(inds_inside, dtype=keras.backend.floatx())
 
-    argmax_overlaps_inds, max_overlaps, gt_argmax_overlaps_inds = overlapping(y_true, y_pred, inds_inside)
+    argmax_overlaps_inds, max_overlaps, gt_argmax_overlaps_inds = overlapping(y_pred, y_true, inds_inside)
 
     # assign bg labels first so that positive labels can clobber them
     if not clobber_positives:

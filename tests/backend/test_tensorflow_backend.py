@@ -20,7 +20,7 @@ def test_label():
 
     inds_inside, all_inside_bbox = keras_rcnn.backend.inside_image(all_bbox,
                                                                    img_info)
-
+    
     argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(vgt_boxes,
                                                                  all_inside_bbox,
                                                                  inds_inside)
@@ -149,7 +149,7 @@ def test_overlapping():
         all_anchors, img_info)
 
     argmax_overlaps_inds, max_overlaps, gt_argmax_overlaps_inds = keras_rcnn.backend.overlapping(
-        gt_boxes, all_inside_anchors, inds_inside)
+        all_inside_anchors, gt_boxes, inds_inside)
 
     argmax_overlaps_inds = keras.backend.eval(argmax_overlaps_inds)
     max_overlaps = keras.backend.eval(max_overlaps)
