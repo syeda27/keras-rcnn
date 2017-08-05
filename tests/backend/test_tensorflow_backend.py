@@ -20,7 +20,7 @@ def test_label():
 
     inds_inside, all_inside_bbox = keras_rcnn.backend.inside_image(all_bbox,
                                                                    img_info)
-    
+
     argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(vgt_boxes,
                                                                  all_inside_bbox,
                                                                  inds_inside)

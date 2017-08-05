@@ -37,7 +37,6 @@ class AnchorTarget(keras.layers.Layer):
         scores, gt_boxes, metadata = inputs
 
         # TODO: Fix usage of batch index
-        shape = metadata[0, :2]
 
         rr, cc = keras.backend.int_shape(scores)[1:-1]
 
