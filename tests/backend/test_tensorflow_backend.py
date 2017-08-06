@@ -10,18 +10,17 @@ import keras_rcnn.layers.object_detection._object_proposal
 def test_label():
     stride = 16
     feat_h, feat_w = (14, 14)
-    img_info = (224, 224, 1)
+    img_info = keras.backend.variable([[224, 224, 3]])
 
-    gt_boxes = numpy.zeros((91, 4))
-    vgt_boxes = tensorflow.convert_to_tensor(gt_boxes,
-                                             dtype=tensorflow.float32)  # keras.backend.variable(gt_boxes)
+    gt_boxes = keras.backend.variable(numpy.random.random((91, 4)))
+    gt_boxes = tensorflow.convert_to_tensor(gt_boxes, dtype=tensorflow.float32)
 
     all_bbox = keras_rcnn.backend.shift((feat_h, feat_w), stride)
 
     inds_inside, all_inside_bbox = keras_rcnn.backend.inside_image(all_bbox,
-                                                                   img_info)
+                                                                   img_info[0])
 
-    argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(vgt_boxes,
+    argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(gt_boxes,
                                                                  all_inside_bbox,
                                                                  inds_inside)
 
@@ -31,6 +30,20 @@ def test_label():
     assert result1.shape == (84,)
 
     assert result2.shape == (84,)
+
+    assert numpy.sum(result2) == 0
+
+    argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(gt_boxes, all_inside_bbox, inds_inside, clobber_positives=False)
+
+    result1 = keras.backend.eval(argmax_overlaps_inds)
+    result2 = keras.backend.eval(bbox_labels)
+
+    assert result1.shape == (84,)
+
+    assert result2.shape == (84,)
+
+    assert numpy.sum(result2) == 1
+
 
 
 def test_non_max_suppression():

@@ -18,7 +18,7 @@ def scatter_add_tensor(ref, indices, updates, name=None):
     This operation outputs ref after the update is done. This makes it easier to chain operations that need to use the
     reset value.
 
-    Duplicate indices: if multiple indices reference the same location, it defaults to output of scatter_nd.
+    Duplicate indices: if multiple indices reference the same location, their contributions add.
 
     Requires updates.shape = indices.shape + ref.shape[1:].
     :param ref: A Tensor. Must be one of the following types: float32, float64, int64, int32, uint8, uint16,
@@ -42,7 +42,7 @@ def scatter_add_tensor(ref, indices, updates, name=None):
         scattered_updates = tensorflow.scatter_nd(indices, updates, ref_shape, name='scattered_updates')
 
         with tensorflow.control_dependencies([tensorflow.assert_equal(ref_shape, tensorflow.shape(scattered_updates, out_type=indices.dtype))]):
-            output = scattered_updates
+            output = tensorflow.add(ref, scattered_updates, name=scope)
 
         return output
 
@@ -256,7 +256,12 @@ def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OV
     indices = keras.backend.expand_dims(gt_argmax_overlaps_inds, axis=1)
 
     updates = keras.backend.ones_like(gt_argmax_overlaps_inds, dtype=keras.backend.floatx())
-    labels = keras_rcnn.backend.scatter_add_tensor(labels, indices, updates)
+
+    #TODO: generalize unique beyond 1D and without assuming duplicate indices imply duplicate values
+    unique_indices, unique_indices_indices = tensorflow.unique(keras.backend.reshape(indices, (-1,)), out_idx='int32')
+    unique_indices = keras.backend.expand_dims(unique_indices, 1)
+    unique_updates, unique_updates_indices = tensorflow.unique(updates, out_idx='int32')
+    labels = keras_rcnn.backend.scatter_add_tensor(labels, unique_indices, unique_updates)
 
     # fg label: above threshold IOU
     labels = keras_rcnn.backend.where(keras.backend.greater_equal(max_overlaps, RPN_POSITIVE_OVERLAP), ones, labels)
