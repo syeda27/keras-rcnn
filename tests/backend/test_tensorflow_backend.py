@@ -56,11 +56,11 @@ def test_bbox_transform_inv():
 
 
 def test_resize_images():
-    im = numpy.zeros((1, 1200, 1600, 3))
+    im = numpy.zeros((1200, 1600, 3))
     shape = (256, 256)
     im = keras.backend.variable(im)
     resize = keras_rcnn.backend.resize_images(im, shape)
-    assert keras.backend.eval(resize).shape == (1, 256, 256, 3)
+    assert keras.backend.eval(resize).shape == (256, 256, 3)
 
 
 def test_subsample_positive_labels():
@@ -139,9 +139,10 @@ def test_crop_and_resize():
 def test_overlapping():
     stride = 16
     features = (14, 14)
-    img_info = (224, 224, 1)
+    img_info = keras.backend.variable([[224, 224, 3]])
     gt_boxes = numpy.zeros((91, 4))
     gt_boxes = keras.backend.variable(gt_boxes)
+    img_info = img_info[0]
 
     all_anchors = keras_rcnn.backend.shift(features, stride)
 
@@ -160,3 +161,26 @@ def test_overlapping():
     assert max_overlaps.shape == (84,)
 
     assert gt_argmax_overlaps_inds.shape == (91,)
+
+
+def test_unmap():
+    stride = 16
+    features = (14, 14)
+    anchors = 9
+    total_anchors = features[0]*features[1]*anchors
+    img_info = keras.backend.variable([[224, 224, 3]])
+    gt_boxes = numpy.zeros((91, 4))
+    gt_boxes = keras.backend.variable(gt_boxes)
+
+    all_anchors = keras_rcnn.backend.shift(features, stride)
+
+    inds_inside, all_inside_anchors = keras_rcnn.backend.inside_image(all_anchors, img_info[0])
+
+    argmax_overlaps_indices, labels = keras_rcnn.backend.label(gt_boxes, all_inside_anchors, inds_inside)
+    bbox_reg_targets = keras_rcnn.backend.bbox_transform(all_inside_anchors, keras.backend.gather(gt_boxes, argmax_overlaps_indices))
+
+    labels = keras_rcnn.backend.unmap(labels, total_anchors, inds_inside, fill=-1)
+    bbox_reg_targets = keras_rcnn.backend.unmap(bbox_reg_targets, total_anchors, inds_inside, fill=0)
+
+    assert keras.backend.eval(labels).shape == (total_anchors, )
+    assert keras.backend.eval(bbox_reg_targets).shape == (total_anchors, 4)

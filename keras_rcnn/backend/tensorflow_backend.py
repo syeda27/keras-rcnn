@@ -18,7 +18,7 @@ def scatter_add_tensor(ref, indices, updates, name=None):
     This operation outputs ref after the update is done. This makes it easier to chain operations that need to use the
     reset value.
 
-    Duplicate indices are handled correctly: if multiple indices reference the same location, their contributions add.
+    Duplicate indices: if multiple indices reference the same location, it defaults to output of scatter_nd.
 
     Requires updates.shape = indices.shape + ref.shape[1:].
     :param ref: A Tensor. Must be one of the following types: float32, float64, int64, int32, uint8, uint16,
@@ -42,7 +42,7 @@ def scatter_add_tensor(ref, indices, updates, name=None):
         scattered_updates = tensorflow.scatter_nd(indices, updates, ref_shape, name='scattered_updates')
 
         with tensorflow.control_dependencies([tensorflow.assert_equal(ref_shape, tensorflow.shape(scattered_updates, out_type=indices.dtype))]):
-            output = tensorflow.add(ref, scattered_updates, name=scope)
+            output = scattered_updates
 
         return output
 
@@ -267,3 +267,24 @@ def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OV
 
     return argmax_overlaps_inds, balance(labels)
 
+
+def unmap(data, count, inds_inside, fill=0):
+    """ Unmap a subset of item (data) back to the original set of items (of
+    size count) """
+
+    if keras.backend.ndim(data) == 1:
+        ret = keras.backend.ones((count,), dtype=keras.backend.floatx()) * fill
+        inds_nd = keras.backend.expand_dims(inds_inside)
+    else:
+        ret = keras.backend.ones((count,) + keras.backend.int_shape(data)[1:], dtype=keras.backend.floatx()) * fill
+        data = keras.backend.transpose(data)
+        data = keras.backend.reshape(data, (-1,))
+
+        inds_ii = keras.backend.tile(inds_inside, [4])
+        inds_ii = keras.backend.expand_dims(inds_ii)
+        ones = keras.backend.expand_dims(keras.backend.ones_like(inds_inside), 1)
+        inds_coords = keras.backend.concatenate([ones * 0, ones, ones * 2, ones * 3], 0)
+        inds_nd = keras.backend.concatenate([inds_ii, inds_coords], 1)
+
+    ret = keras_rcnn.backend.scatter_add_tensor(ret, inds_nd, data)
+    return ret

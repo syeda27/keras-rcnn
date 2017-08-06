@@ -23,6 +23,7 @@ def anchor(base_size=16, ratios=None, scales=None):
 
 
 def bbox_transform(ex_rois, gt_rois):
+    """Compute bounding-box regression targets for an image."""
     ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0
     ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + 1.0
     ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
@@ -200,11 +201,12 @@ def inside_image(boxes, im_info, allowed_border=0):
     :return: (None, 4) indices of boxes completely in original image,
         (None, 4) tensor of boxes completely inside image
     """
+
     indices = keras_rcnn.backend.where(
         (boxes[:, 0] >= -allowed_border) &
         (boxes[:, 1] >= -allowed_border) &
-        (boxes[:, 2] < allowed_border + im_info[-2]) & # width
-        (boxes[:, 3] < allowed_border + im_info[-3])   # height
+        (boxes[:, 2] < allowed_border + im_info[1]) & # width
+        (boxes[:, 3] < allowed_border + im_info[0])   # height
     )
 
     indices = keras.backend.cast(indices, "int32")
@@ -212,3 +214,4 @@ def inside_image(boxes, im_info, allowed_border=0):
     gathered = keras.backend.gather(boxes, indices)
 
     return indices[:, 0], keras.backend.reshape(gathered, [-1, 4])
+
