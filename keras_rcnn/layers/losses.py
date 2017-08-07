@@ -15,7 +15,7 @@ class ClassificationLoss(keras.layers.Layer):
 
         loss = self.compute_loss(output, target)
 
-        self.add_loss(loss, inputs=inputs)
+        self.add_loss(loss, inputs)
 
         return output
 
@@ -30,7 +30,8 @@ class ClassificationLoss(keras.layers.Layer):
         output = tensorflow.gather_nd(output, indices)
         target = tensorflow.gather_nd(target, indices)
 
-        loss = keras.backend.mean(keras.backend.sparse_categorical_crossentropy(output, target))
+        loss = keras.backend.sparse_categorical_crossentropy(output, target)
+        loss = keras.backend.mean(loss)
 
         return loss
 
@@ -45,13 +46,13 @@ class RegressionLoss(keras.layers.Layer):
         super(RegressionLoss, self).__init__(**kwargs)
 
     def call(self, inputs, **kwargs):
-        output, target, rpn_labels = inputs
+        output, target, labels = inputs
 
-        loss = self.compute_loss(output, target, rpn_labels)
+        loss = self.compute_loss(output, target, labels)
 
-        self.add_loss(loss, inputs=inputs)
+        self.add_loss(loss, inputs)
 
-        return inputs[1]
+        return output
 
     @staticmethod
     def compute_loss(output, target, labels):
