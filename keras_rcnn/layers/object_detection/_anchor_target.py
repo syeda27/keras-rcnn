@@ -3,6 +3,7 @@ import keras.engine
 
 import keras_rcnn.backend
 
+import tensorflow
 
 class AnchorTarget(keras.layers.Layer):
     """Calculate proposal anchor targets and corresponding labels (label: 1 is positive, 0 is negative, -1 is do not care) for ground truth boxes
@@ -38,16 +39,17 @@ class AnchorTarget(keras.layers.Layer):
 
         # TODO: Fix usage of batch index
 
-        rr, cc = keras.backend.int_shape(scores)[1:-1]
+        rr, cc, total_anchors = keras.backend.int_shape(scores)[1:]
+        total_anchors = rr * cc * total_anchors // 2
 
         # 1. Generate proposals from bbox deltas and shifted anchors
         anchors = keras_rcnn.backend.shift((rr, cc), self.stride)
 
         # only keep anchors inside the image
-        indices, anchors = keras_rcnn.backend.inside_image(anchors, metadata[0], self.allowed_border)
+        inds_inside, anchors = keras_rcnn.backend.inside_image(anchors, metadata[0], self.allowed_border)
 
         # 2. obtain indices of gt boxes with the greatest overlap, balanced labels
-        argmax_overlaps_indices, labels = keras_rcnn.backend.label(anchors, gt_boxes, indices, self.negative_overlap, self.positive_overlap, self.clobber_positives)
+        argmax_overlaps_indices, labels = keras_rcnn.backend.label(gt_boxes, anchors, inds_inside, self.negative_overlap, self.positive_overlap, self.clobber_positives)
 
         gt_boxes = keras.backend.gather(gt_boxes, argmax_overlaps_indices)
 
@@ -56,6 +58,10 @@ class AnchorTarget(keras.layers.Layer):
 
         # TODO: Why is bbox_reg_targets' shape (5, ?, 4)? Why is gt_boxes' shape (None, None, 4) and not (None, 4)?
         bbox_reg_targets = keras.backend.reshape(bbox_reg_targets, (-1, 4))
+
+        # map up to original set of anchors
+        labels = keras_rcnn.backend.unmap(labels, total_anchors, inds_inside, fill=-1)
+        bbox_reg_targets = keras_rcnn.backend.unmap(bbox_reg_targets, total_anchors, inds_inside, fill=0)
 
         # TODO: implement inside and outside weights
         return [labels, bbox_reg_targets]
