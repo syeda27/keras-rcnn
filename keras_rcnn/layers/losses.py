@@ -17,7 +17,7 @@ class ClassificationLoss(keras.layers.Layer):
 
         return loss
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
 
         rpn_labels, rpn_classification = inputs
 
@@ -25,7 +25,7 @@ class ClassificationLoss(keras.layers.Layer):
 
         self.add_loss(loss, inputs=inputs)
 
-        return inputs[0]
+        return inputs[1]
 
 
 
@@ -62,11 +62,11 @@ class RegressionLoss(keras.layers.Layer):
 
         return loss
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         rpn_bbox_targets, rpn_regression, rpn_labels = inputs
 
         loss = self._loss(rpn_bbox_targets, rpn_regression, rpn_labels)
 
         self.add_loss(loss, inputs=inputs)
 
-        return inputs[0]
+        return inputs[1]
