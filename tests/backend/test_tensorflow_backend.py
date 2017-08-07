@@ -12,7 +12,7 @@ def test_label():
     feat_h, feat_w = (14, 14)
     img_info = keras.backend.variable([[224, 224, 3]])
 
-    gt_boxes = keras.backend.variable(numpy.random.random((91, 4)))
+    gt_boxes = keras.backend.variable(100 * numpy.random.random((91, 4)))
     gt_boxes = tensorflow.convert_to_tensor(gt_boxes, dtype=tensorflow.float32)
 
     all_bbox = keras_rcnn.backend.shift((feat_h, feat_w), stride)
@@ -31,7 +31,9 @@ def test_label():
 
     assert result2.shape == (84,)
 
-    assert numpy.sum(result2) == 0
+    assert numpy.max(result2) <= 1
+
+    assert numpy.min(result2) >= -1
 
     argmax_overlaps_inds, bbox_labels = keras_rcnn.backend.label(gt_boxes, all_inside_bbox, inds_inside, clobber_positives=False)
 
@@ -42,8 +44,9 @@ def test_label():
 
     assert result2.shape == (84,)
 
-    assert numpy.sum(result2) == 1
+    assert numpy.max(result2) <= 1
 
+    assert numpy.min(result2) >= -1
 
 
 def test_non_max_suppression():

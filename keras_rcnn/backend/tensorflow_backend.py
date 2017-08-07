@@ -231,7 +231,7 @@ def subsample_negative_labels(labels):
     return tensorflow.cond(predicate, lambda: less_negative(), lambda: more_negative())
 
 
-def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OVERLAP=0.7, clobber_positives=True):
+def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OVERLAP=0.7, clobber_positives=False):
     """
     Create bbox labels.
     label: 1 is positive, 0 is negative, -1 is do not care
@@ -257,11 +257,12 @@ def label(y_true, y_pred, inds_inside, RPN_NEGATIVE_OVERLAP=0.3, RPN_POSITIVE_OV
 
     updates = keras.backend.ones_like(gt_argmax_overlaps_inds, dtype=keras.backend.floatx())
 
-    #TODO: generalize unique beyond 1D and without assuming duplicate indices imply duplicate values
+    #TODO: generalize unique beyond 1D
     unique_indices, unique_indices_indices = tensorflow.unique(keras.backend.reshape(indices, (-1,)), out_idx='int32')
+    unique_updates = keras.backend.gather(updates, unique_indices)
+    inverse_labels = keras.backend.gather(-1 * labels, unique_indices)
     unique_indices = keras.backend.expand_dims(unique_indices, 1)
-    unique_updates, unique_updates_indices = tensorflow.unique(updates, out_idx='int32')
-    labels = keras_rcnn.backend.scatter_add_tensor(labels, unique_indices, unique_updates)
+    labels = keras_rcnn.backend.scatter_add_tensor(labels, unique_indices, inverse_labels + unique_updates)
 
     # fg label: above threshold IOU
     labels = keras_rcnn.backend.where(keras.backend.greater_equal(max_overlaps, RPN_POSITIVE_OVERLAP), ones, labels)
@@ -290,6 +291,6 @@ def unmap(data, count, inds_inside, fill=0):
         ones = keras.backend.expand_dims(keras.backend.ones_like(inds_inside), 1)
         inds_coords = keras.backend.concatenate([ones * 0, ones, ones * 2, ones * 3], 0)
         inds_nd = keras.backend.concatenate([inds_ii, inds_coords], 1)
-
-    ret = keras_rcnn.backend.scatter_add_tensor(ret, inds_nd, data)
+    inverse_ret = tensorflow.squeeze(tensorflow.gather_nd(-1 * ret, inds_nd))
+    ret = keras_rcnn.backend.scatter_add_tensor(ret, inds_nd, inverse_ret + data)
     return ret
