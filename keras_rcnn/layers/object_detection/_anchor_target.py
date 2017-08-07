@@ -5,6 +5,7 @@ import keras_rcnn.backend
 
 import tensorflow
 
+
 class AnchorTarget(keras.layers.Layer):
     """Calculate proposal anchor targets and corresponding labels (label: 1 is positive, 0 is negative, -1 is do not care) for ground truth boxes
 
@@ -35,10 +36,13 @@ class AnchorTarget(keras.layers.Layer):
         super(AnchorTarget, self).build(input_shape)
 
     def call(self, inputs, **kwargs):
-        scores, gt_boxes, metadata = inputs
+        scores, gt_boxes, image = inputs
+
+        metadata = keras.backend.int_shape(image)[1:]
+
+        gt_boxes = gt_boxes[0]
 
         # TODO: Fix usage of batch index
-
         rr, cc, total_anchors = keras.backend.int_shape(scores)[1:]
         total_anchors = rr * cc * total_anchors // 2
 
@@ -46,7 +50,7 @@ class AnchorTarget(keras.layers.Layer):
         anchors = keras_rcnn.backend.shift((rr, cc), self.stride)
 
         # only keep anchors inside the image
-        inds_inside, anchors = keras_rcnn.backend.inside_image(anchors, metadata[0], self.allowed_border)
+        inds_inside, anchors = keras_rcnn.backend.inside_image(anchors, metadata, self.allowed_border)
 
         # 2. obtain indices of gt boxes with the greatest overlap, balanced labels
         argmax_overlaps_indices, labels = keras_rcnn.backend.label(gt_boxes, anchors, inds_inside, self.negative_overlap, self.positive_overlap, self.clobber_positives)
@@ -67,7 +71,7 @@ class AnchorTarget(keras.layers.Layer):
         return [labels, bbox_reg_targets]
 
     def compute_output_shape(self, input_shape):
-        return [(None,), (None, 4)]
+        return [(None, 1), (None, 4)]
 
     def compute_mask(self, inputs, mask=None):
         # unfortunately this is required
