@@ -3,30 +3,39 @@ import keras.layers
 import keras_rcnn.backend
 import tensorflow
 
+
 class ClassificationLoss(keras.layers.Layer):
     def __init__(self, anchors, **kwargs):
         self.anchors = anchors
 
         super(ClassificationLoss, self).__init__(**kwargs)
 
-    def _loss(self, rpn_labels, rpn_classification):
-        rpn_classification = keras.backend.reshape(rpn_classification, [-1, 2])
-        rpn_classification = tensorflow.gather_nd(rpn_classification, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
-        rpn_labels         = tensorflow.gather_nd(rpn_labels, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
-        loss               = keras.backend.mean(keras.backend.sparse_categorical_crossentropy(rpn_classification, rpn_labels))
-
-        return loss
-
     def call(self, inputs, **kwargs):
+        target, output = inputs
 
-        rpn_labels, rpn_classification = inputs
-
-        loss = self._loss(rpn_labels, rpn_classification)
+        loss = self.compute_loss(output, target)
 
         self.add_loss(loss, inputs=inputs)
 
-        return inputs[1]
+        return output
 
+    @staticmethod
+    def compute_loss(output, target):
+        output = keras.backend.reshape(output, [-1, 2])
+
+        condition = keras.backend.not_equal(target, -1)
+
+        indices = keras_rcnn.backend.where(condition)
+
+        output = tensorflow.gather_nd(output, indices)
+        target = tensorflow.gather_nd(target, indices)
+
+        loss = keras.backend.mean(keras.backend.sparse_categorical_crossentropy(output, target))
+
+        return loss
+
+    def compute_output_shape(self, input_shape):
+        return None, None, None, 18
 
 
 class RegressionLoss(keras.layers.Layer):
@@ -35,12 +44,22 @@ class RegressionLoss(keras.layers.Layer):
 
         super(RegressionLoss, self).__init__(**kwargs)
 
-    def _loss(self, rpn_bbox_targets, rpn_regression, rpn_labels):
+    def call(self, inputs, **kwargs):
+        rpn_bbox_targets, rpn_regression, rpn_labels = inputs
+
+        loss = self.compute_loss(rpn_bbox_targets, rpn_regression, rpn_labels)
+
+        self.add_loss(loss, inputs=inputs)
+
+        return inputs[1]
+
+    @staticmethod
+    def compute_loss(rpn_bbox_targets, rpn_regression, rpn_labels):
         # Robust L1 Loss
         rpn_regression = keras.backend.reshape(rpn_regression, [-1, 4])
         rpn_regression = tensorflow.gather_nd(rpn_regression, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
         rpn_bbox_targets = tensorflow.gather_nd(rpn_bbox_targets, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
-        rpn_labels     = tensorflow.gather_nd(rpn_labels, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
+        rpn_labels = tensorflow.gather_nd(rpn_labels, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
 
         x = rpn_bbox_targets - rpn_regression
 
@@ -62,11 +81,5 @@ class RegressionLoss(keras.layers.Layer):
 
         return loss
 
-    def call(self, inputs, **kwargs):
-        rpn_bbox_targets, rpn_regression, rpn_labels = inputs
-
-        loss = self._loss(rpn_bbox_targets, rpn_regression, rpn_labels)
-
-        self.add_loss(loss, inputs=inputs)
-
-        return inputs[1]
+    def compute_output_shape(self, input_shape):
+        return None, None, None, 36
