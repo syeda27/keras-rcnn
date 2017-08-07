@@ -70,6 +70,7 @@ def test_overlap():
         [0, 90, 0, 90]
     ])
     x = keras.backend.variable(x)
+
     y = numpy.asarray([
         [0, 20, 0, 20],
         [0, 40, 0, 40],

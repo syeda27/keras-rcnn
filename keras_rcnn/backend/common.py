@@ -172,7 +172,9 @@ def overlap(a, b):
 
     ua = keras.backend.maximum(ua, 0.0001)
 
-    return iw * ih / ua
+    intersection = iw * ih
+
+    return intersection / ua
 
 
 def filter_boxes(proposals, minimum):
