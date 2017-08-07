@@ -35,7 +35,7 @@ class ClassificationLoss(keras.layers.Layer):
         return loss
 
     def compute_output_shape(self, input_shape):
-        return None, None, None, 18
+        return None, None, None, self.anchors * 2
 
 
 class RegressionLoss(keras.layers.Layer):
@@ -82,4 +82,4 @@ class RegressionLoss(keras.layers.Layer):
         return loss
 
     def compute_output_shape(self, input_shape):
-        return None, None, None, 36
+        return None, None, None, self.anchors * 4
