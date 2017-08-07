@@ -11,7 +11,7 @@ class ClassificationLoss(keras.layers.Layer):
         super(ClassificationLoss, self).__init__(**kwargs)
 
     def call(self, inputs, **kwargs):
-        target, output = inputs
+        output, target = inputs
 
         loss = self.compute_loss(output, target)
 
@@ -45,28 +45,34 @@ class RegressionLoss(keras.layers.Layer):
         super(RegressionLoss, self).__init__(**kwargs)
 
     def call(self, inputs, **kwargs):
-        rpn_bbox_targets, rpn_regression, rpn_labels = inputs
+        output, target, rpn_labels = inputs
 
-        loss = self.compute_loss(rpn_bbox_targets, rpn_regression, rpn_labels)
+        loss = self.compute_loss(output, target, rpn_labels)
 
         self.add_loss(loss, inputs=inputs)
 
         return inputs[1]
 
     @staticmethod
-    def compute_loss(rpn_bbox_targets, rpn_regression, rpn_labels):
+    def compute_loss(output, target, labels):
         # Robust L1 Loss
-        rpn_regression = keras.backend.reshape(rpn_regression, [-1, 4])
-        rpn_regression = tensorflow.gather_nd(rpn_regression, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
-        rpn_bbox_targets = tensorflow.gather_nd(rpn_bbox_targets, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
-        rpn_labels = tensorflow.gather_nd(rpn_labels, keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, -1)))
+        output = keras.backend.reshape(output, [-1, 4])
 
-        x = rpn_bbox_targets - rpn_regression
+        condition = keras.backend.not_equal(labels, -1)
+
+        indices = keras_rcnn.backend.where(condition)
+
+        output = tensorflow.gather_nd(output, indices)
+        target = tensorflow.gather_nd(target, indices)
+        labels = tensorflow.gather_nd(labels, indices)
+
+        x = target - output
 
         mask = keras.backend.less_equal(keras.backend.abs(x), 1.0)
         mask = keras.backend.cast(mask, keras.backend.floatx())
 
-        a_x = keras.backend.cast(keras_rcnn.backend.where(keras.backend.not_equal(rpn_labels, 0), keras.backend.ones_like(rpn_labels), keras.backend.zeros_like(rpn_labels)), keras.backend.floatx())
+        a_x = keras_rcnn.backend.where(keras.backend.not_equal(labels, 0), keras.backend.ones_like(labels), keras.backend.zeros_like(labels))
+        a_x = keras.backend.cast(a_x, keras.backend.floatx())
 
         a_y = mask * (0.5 * x * x) + (1 - mask) * (keras.backend.abs(x) - 0.5)
 
