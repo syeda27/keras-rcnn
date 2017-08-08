@@ -36,7 +36,8 @@ def test_call_regression():
     expected_loss = 0
 
     labels, bbox_reg_targets = keras_rcnn.layers.AnchorTarget()([scores, y_true, im_info])
-    numpy.testing.assert_array_equal(layer.call([bbox_reg_targets, deltas, labels]), bbox_reg_targets)
+    numpy.testing.assert_array_equal(
+        layer.call([bbox_reg_targets, deltas, labels]), bbox_reg_targets)
 
     assert len(layer.losses) == 1
 

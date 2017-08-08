@@ -3,8 +3,6 @@ import keras.engine
 
 import keras_rcnn.backend
 
-import tensorflow
-
 
 class AnchorTarget(keras.layers.Layer):
     """Calculate proposal anchor targets and corresponding labels (label: 1 is positive, 0 is negative, -1 is do not care) for ground truth boxes
