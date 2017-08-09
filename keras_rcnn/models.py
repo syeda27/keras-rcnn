@@ -19,7 +19,7 @@ class RCNN(keras.models.Model):
     :return model: a functional model API for R-CNN.
     """
 
-    def __init__(self, inputs, features, heads, rois):
+    def __init__(self, inputs, features, heads, rois, *args, **kwargs):
         image, im_info, gt_boxes = inputs
         num_anchors = 9 # TODO: Parametrize this
 
@@ -41,7 +41,7 @@ class RCNN(keras.models.Model):
 
         [score, boxes] = heads(slices)
 
-        super(RCNN, self).__init__(inputs, [rpn_prediction, score, boxes, rpn_classification_loss])
+        super(RCNN, self).__init__(inputs, [score, boxes, rpn_classification_loss], *args, **kwargs)
 
 
 class ResNet50RCNN(RCNN):
@@ -56,7 +56,7 @@ class ResNet50RCNN(RCNN):
     :return model: a functional model API for R-CNN.
     """
 
-    def __init__(self, inputs, classes, rois=300, blocks=[3, 4, 6]):
+    def __init__(self, inputs, classes, rois=300, blocks=[3, 4, 6], *args, **kwargs):
         # ResNet50 as encoder
         image, _, _ = inputs
         features = keras_resnet.models.ResNet50(image, blocks=blocks, include_top=False).output
@@ -64,4 +64,4 @@ class ResNet50RCNN(RCNN):
         # ResHead with score and boxes
         heads = keras_rcnn.classifiers.residual(classes)
 
-        super(ResNet50RCNN, self).__init__(inputs, features, heads, rois)
+        super(ResNet50RCNN, self).__init__(inputs, features, heads, rois, *args, **kwargs)
