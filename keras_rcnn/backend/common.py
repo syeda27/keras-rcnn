@@ -4,6 +4,14 @@ import numpy
 import keras_rcnn.backend
 
 
+def hstack(tensors):
+    return keras.backend.concatenate(tensors, 1)
+
+
+def vstack(tensors):
+    return keras.backend.concatenate(tensors, 0)
+
+
 def anchor(base_size=16, ratios=None, scales=None):
     """
     Generates a regular grid of multi-aspect and multi-scale anchor boxes.
