@@ -39,7 +39,7 @@ class RCNN(keras.models.Model):
 
         [score, boxes] = heads(slices)
 
-        super(RCNN, self).__init__(inputs, [score, boxes, rpn_classification_loss], *args, **kwargs)
+        super(RCNN, self).__init__(inputs, [score, boxes, rpn_classification_loss, rpn_regression_loss], *args, **kwargs)
 
 
 class ResNet50RCNN(RCNN):
