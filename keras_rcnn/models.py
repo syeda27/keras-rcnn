@@ -57,7 +57,7 @@ class ResNet50RCNN(RCNN):
     def __init__(self, inputs, classes, rois=300, blocks=[3, 4, 6], *args, **kwargs):
         # ResNet50 as encoder
         image, _, _ = inputs
-        features = keras_resnet.models.ResNet50(image, blocks=blocks, include_top=False).output
+        features = keras_resnet.models.ResNet50(image, blocks=blocks, include_top=False, name="resnet50")(image)
 
         # ResHead with score and boxes
         heads = keras_rcnn.classifiers.residual(classes)
