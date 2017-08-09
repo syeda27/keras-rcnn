@@ -1,7 +1,6 @@
 import keras.layers
 
 import keras_rcnn.backend
-import tensorflow
 
 
 class ClassificationLoss(keras.layers.Layer):
@@ -27,8 +26,8 @@ class ClassificationLoss(keras.layers.Layer):
 
         indices = keras_rcnn.backend.where(condition)
 
-        output = tensorflow.gather_nd(output, indices)
-        target = tensorflow.gather_nd(target, indices)
+        output = keras_rcnn.backend.gather_nd(output, indices)
+        target = keras_rcnn.backend.gather_nd(target, indices)
 
         loss = keras.backend.sparse_categorical_crossentropy(output, target)
         loss = keras.backend.mean(loss)
@@ -63,9 +62,9 @@ class RegressionLoss(keras.layers.Layer):
 
         indices = keras_rcnn.backend.where(condition)
 
-        output = tensorflow.gather_nd(output, indices)
-        target = tensorflow.gather_nd(target, indices)
-        labels = tensorflow.gather_nd(labels, indices)
+        output = keras_rcnn.backend.gather_nd(output, indices)
+        target = keras_rcnn.backend.gather_nd(target, indices)
+        labels = keras_rcnn.backend.gather_nd(labels, indices)
 
         x = target - output
 
@@ -77,7 +76,7 @@ class RegressionLoss(keras.layers.Layer):
 
         a_y = mask * (0.5 * x * x) + (1 - mask) * (keras.backend.abs(x) - 0.5)
 
-        a = tensorflow.matmul(keras.backend.expand_dims(a_x, 0), a_y)
+        a = keras_rcnn.backend.matmul(keras.backend.expand_dims(a_x, 0), a_y)
         a = keras.backend.sum(a)
 
         # Divided by anchor overlaps
