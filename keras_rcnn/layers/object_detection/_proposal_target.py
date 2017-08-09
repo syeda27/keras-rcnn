@@ -36,9 +36,7 @@ class ProposalTarget(keras.layers.Layer):
         # Include ground-truth boxes in the set of candidate rois
         zeros = keras.backend.zeros((keras.backend.int_shape(gt_boxes)[0], 1), dtype=gt_boxes.dtype)
 
-        all_rois = keras.backend.vstack(
-            (all_rois, keras.backend.hstack((zeros, gt_boxes)))
-        )
+        all_rois = keras_rcnn.backend.vstack((all_rois, keras_rcnn.backend.hstack((zeros, gt_boxes))))
 
         rois_per_image = self.batchsize / self.num_images
         fg_rois_per_image = keras.backend.round(self.fg_fraction * rois_per_image)

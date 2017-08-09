@@ -402,7 +402,7 @@ def sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image
 
     #Compute bounding-box regression targets for an image.
     targets = keras_rcnn.backend.bbox_transform(rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :])
-    bbox_target_data = keras.backend.hstack((keras.backend.expand_dims(labels), targets))
+    bbox_target_data = keras_rcnn.backend.hstack((keras.backend.expand_dims(labels), targets))
 
     bbox_targets = _get_bbox_regression_labels(bbox_target_data, num_classes)
 
