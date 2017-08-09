@@ -200,3 +200,20 @@ def test_unmap():
 
     assert keras.backend.eval(labels).shape == (total_anchors, )
     assert keras.backend.eval(bbox_reg_targets).shape == (total_anchors, 4)
+
+
+def test_get_bbox_regression_labels():
+    clss = keras.backend.variable(numpy.array([0, 1, 2, 0, 2, 0, 0, 1, 2, 1]))
+    bbox_target_data = keras.backend.zeros((10, 4))
+    num_classes = 3
+    bbox_targets = keras_rcnn.backend.tensorflow_backend._get_bbox_regression_labels(clss, bbox_target_data, num_classes)
+    bbox_targets = keras.backend.eval(bbox_targets)
+
+    assert bbox_targets.shape == (10, 4 * num_classes)
+
+def test_sample_rois():
+    fg_rois_per_image = 0.5
+    rois_per_image = 300
+    num_classes = 3
+    fg_thresh = 0.7
+    labels, rois, bbox_targets = keras_rcnn.backend.sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, num_classes, fg_thresh, bg_thresh_hi, bg_thresh_lo)
