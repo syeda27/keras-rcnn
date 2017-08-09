@@ -1,7 +1,5 @@
-from .losses import ClassificationLoss, RegressionLoss
+from .losses import (ClassificationLoss, RegressionLoss)
 
-from .object_detection import ObjectProposal
-
-from .object_detection import (AnchorTarget)
+from .object_detection import (AnchorTarget, ObjectProposal, ProposalTarget)
 
 from .pooling import ROI
