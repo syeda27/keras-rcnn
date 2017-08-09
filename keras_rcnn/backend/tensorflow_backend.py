@@ -181,23 +181,29 @@ def subsample_positive_labels(labels):
     :return:
     """
 
-    num_fg = RPN_FG_FRACTION * RPN_BATCHSIZE
+    num_fg = int(RPN_FG_FRACTION * RPN_BATCHSIZE)
 
-    fg_inds = keras.backend.shape(keras_rcnn.backend.where(keras.backend.equal(labels, 1)))[0]
+    fg_inds = keras_rcnn.backend.where(keras.backend.equal(labels, 1))
+    num_fg_inds = keras.backend.shape(fg_inds)[0]
 
-    size = tensorflow.subtract(tensorflow.cast(fg_inds, tensorflow.int32), tensorflow.cast(num_fg, tensorflow.int32))
+    size = num_fg_inds - num_fg
 
     def more_positive():
-        elems = tensorflow.multinomial(tensorflow.log(tensorflow.ones((1, fg_inds))), size)
+        #TODO: try to replace tensorflow
+        indices = tensorflow.random_shuffle(keras.backend.reshape(fg_inds, (-1,)))[:size]
 
-        indices = tensorflow.reshape(elems, (-1, 1))
+        updates = tensorflow.ones((size,)) * -1
 
-        return scatter_add_tensor(labels, indices, tensorflow.ones((size,)) * -1)
+        inverse_labels = keras.backend.gather(labels, indices) * -1
+
+        indices = keras.backend.reshape(indices, (-1, 1))
+
+        return scatter_add_tensor(labels, indices, inverse_labels + updates)
 
     def less_positive():
         return labels
 
-    predicate = tensorflow.less_equal(size, 0)
+    predicate = keras.backend.less_equal(size, 0)
 
     return tensorflow.cond(predicate, lambda: less_positive(), lambda: more_positive())
 
@@ -209,23 +215,23 @@ def subsample_negative_labels(labels):
 
     :return:
     """
-    num_bg = RPN_BATCHSIZE - keras.backend.shape(tensorflow.where(keras.backend.equal(labels, 1)))[0]
+    num_bg = RPN_BATCHSIZE - keras.backend.shape(keras_rcnn.backend.where(keras.backend.equal(labels, 1)))[0]
+    bg_inds = keras_rcnn.backend.where(keras.backend.equal(labels, 0))
+    num_bg_inds = keras.backend.shape(bg_inds)[0]
 
-    bg_inds = keras.backend.shape(tensorflow.where(keras.backend.equal(labels, 0)))[0]
-
-    size = bg_inds - num_bg
+    size = num_bg_inds - num_bg
 
     def more_negative():
-        elems = tensorflow.multinomial(keras.backend.log(tensorflow.ones((1, bg_inds))), size)
-
-        ref = labels
-
-        indices = keras.backend.reshape(elems, (-1, 1))
+        #TODO: try to replace tensorflow
+        indices = tensorflow.random_shuffle(keras.backend.reshape(bg_inds, (-1,)))[:size]
 
         updates = tensorflow.ones((size,)) * -1
 
-        return scatter_add_tensor(ref, indices, updates)
+        inverse_labels = keras.backend.gather(labels, indices) * -1
 
+        indices = keras.backend.reshape(indices, (-1, 1))
+
+        return scatter_add_tensor(labels, indices, inverse_labels + updates)
     def less_negative():
         return labels
 
@@ -297,3 +303,84 @@ def unmap(data, count, inds_inside, fill=0):
     inverse_ret = tensorflow.squeeze(tensorflow.gather_nd(-1 * ret, inds_nd))
     ret = keras_rcnn.backend.scatter_add_tensor(ret, inds_nd, inverse_ret + data)
     return ret
+
+def _get_bbox_regression_labels(clss, bbox_target_data, num_classes):
+    """Bounding-box regression targets (bbox_target_data) are stored in a
+    form N x (tx, ty, tw, th) and class labels (clss) are in NxK
+    This function expands those targets into the 4-of-4*K representation used
+    by the network (i.e. only one class has non-zero targets).
+    Returns:
+        bbox_target (ndarray): N x 4K blob of regression targets
+    """
+    N = keras.backend.int_shape(clss)[0]
+    bbox_targets = keras.backend.zeros((N, 4 * num_classes), dtype=keras.backend.floatx())
+    inds = keras.backend.reshape(keras_rcnn.backend.where(clss > 0), (-1,))
+
+    cls = keras.backend.gather(clss, inds)
+    start = 4 * cls
+    ii = keras.backend.expand_dims(inds)
+    ii = keras.backend.tile(ii, [4, 1])
+
+    aa = keras.backend.expand_dims(keras.backend.concatenate([start, start + 1, start + 2, start + 3], 0))
+    aa = keras.backend.cast(aa, dtype='int64')
+    indices = keras.backend.concatenate([ii, aa], 1)
+    updates = keras.backend.gather(bbox_target_data, inds)
+    updates = keras.backend.transpose(updates)
+    updates = keras.backend.reshape(updates, (-1,))
+    # bbox_targets are 0
+    bbox_targets = keras_rcnn.backend.scatter_add_tensor(bbox_targets, indices, updates)
+
+    return bbox_targets
+
+
+def sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, num_classes, fg_thresh, bg_thresh_hi, bg_thresh_lo):
+    """Generate a random sample of RoIs comprising foreground and background
+    examples.
+    """
+    # overlaps: (rois x gt_boxes)
+    overlaps = keras_rcnn.backend.overlap(all_rois[:, 1:5], gt_boxes)
+    gt_assignment = overlaps.argmax(axis=1)
+    max_overlaps = overlaps.max(axis=1)
+    labels = keras.backend.gather(gt_labels, gt_assignment)
+
+    def no_sample(indices):
+        return indices
+    def sample(indices, size):
+        elems = tensorflow.multinomial(tensorflow.log(tensorflow.ones((1, indices))), size)
+        return keras.backend.gather(indices, keras.backend.reshape(elems, (-1, )))
+
+    # Select foreground RoIs as those with >= FG_THRESH overlap
+    fg_inds = keras_rcnn.backend.where(max_overlaps >= fg_thresh)[0]
+    # Guard against the case when an image has fewer than fg_rois_per_image foreground RoIs
+    fg_rois_per_this_image = keras.backend.minimum(fg_rois_per_image, keras.backend.shape(fg_inds)[0])
+    # Sample foreground regions without replacement
+    fg_inds = tensorflow.cond(keras.backend.shape(fg_inds)[0] > 0, no_sample(fg_inds), sample(fg_inds, fg_rois_per_this_image))
+
+    # Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
+    bg_inds = keras_rcnn.backend.where((max_overlaps < bg_thresh_hi) & (max_overlaps >= bg_thresh_lo))[0]
+    # Compute number of background RoIs to take from this image (guarding against there being fewer than desired)
+    bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
+    bg_rois_per_this_image = keras.backend.mininum(bg_rois_per_this_image, keras.backend.shape(bg_inds)[0])
+    # Sample background regions without replacement
+    bg_inds = tensorflow.cond(keras.backend.shape(bg_inds)[0] > 0, no_sample(bg_inds), sample(bg_inds, bg_rois_per_this_image))
+
+    # The indices that we're selecting (both fg and bg)
+    keep_inds = keras.backend.concatenate(fg_inds, bg_inds)
+    # Select sampled values from various arrays:
+    labels = keras.backend.gather(labels, keep_inds)
+    # Clamp labels for the background RoIs to 0
+    update_indices = keras.backend.arange(fg_rois_per_this_image, keras.backend.shape(labels)[0])
+    inverse_labels = keras.backend.gather(labels, update_indices) * -1
+    update_indices = keras.backend.reshape(update_indices, (-1, 1))
+    labels = keras_rcnn.backend.scatter_add_tensor(labels, update_indices, inverse_labels)
+
+    rois = keras.backend.gather(all_rois, keep_inds)
+
+    #Compute bounding-box regression targets for an image.
+    targets = keras_rcnn.backend.bbox_transform(rois[:, 1:5], gt_boxes[gt_assignment[keep_inds], :])
+    bbox_target_data = keras.backend.hstack((keras.backend.expand_dims(labels), targets))
+
+    bbox_targets = _get_bbox_regression_labels(bbox_target_data, num_classes)
+
+    return labels, rois, bbox_targets
+
