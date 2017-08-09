@@ -224,4 +224,3 @@ def inside_image(boxes, im_info, allowed_border=0):
     gathered = keras.backend.gather(boxes, indices)
 
     return indices[:, 0], keras.backend.reshape(gathered, [-1, 4])
-
