@@ -401,8 +401,8 @@ def sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image,
     """
     # overlaps: (rois x gt_boxes)
     overlaps = keras_rcnn.backend.overlap(all_rois[:, 1:5], gt_boxes)
-    gt_assignment = overlaps.argmax(axis=1)
-    max_overlaps = overlaps.max(axis=1)
+    gt_assignment = keras.backend.argmax(overlaps, 1)
+    max_overlaps = keras.backend.max(overlaps, 1)
     labels = keras.backend.gather(gt_labels, gt_assignment)
 
     def no_sample(indices):

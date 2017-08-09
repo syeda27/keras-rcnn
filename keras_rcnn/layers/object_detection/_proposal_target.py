@@ -31,19 +31,17 @@ class ProposalTarget(keras.layers.Layer):
         # (i.e., rpn.proposal_layer.ProposalLayer), or any other source
         # GT boxes (x1, y1, x2, y2)
         # and other times after box coordinates -- normalize to one format
-        all_rois, gt_boxes, gt_labels = inputs
+        proposals, bounding_boxes, labels = inputs
 
-        # Include ground-truth boxes in the set of candidate rois
-        zeros = keras.backend.zeros((keras.backend.int_shape(gt_boxes)[0], 1), dtype=gt_boxes.dtype)
-
-        all_rois = keras_rcnn.backend.vstack((all_rois, keras_rcnn.backend.hstack((zeros, gt_boxes))))
+        proposals = keras.backend.concatenate((proposals, bounding_boxes), 1)
 
         rois_per_image = self.batchsize / self.num_images
         fg_rois_per_image = keras.backend.round(self.fg_fraction * rois_per_image)
 
         # Sample rois with classification labels and bounding box regression
         # targets
-        labels, rois, bbox_targets = keras_rcnn.backend.sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, self.num_classes)
+
+        labels, rois, bbox_targets = keras_rcnn.backend.sample_rois(proposals, bounding_boxes, labels, fg_rois_per_image, rois_per_image, self.num_classes)
 
         return [rois, labels, bbox_targets]
 
