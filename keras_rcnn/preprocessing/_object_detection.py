@@ -89,7 +89,7 @@ class DictionaryIterator(Iterator):
         ds = self.dictionary[index]["boxes"]
 
         boxes = numpy.asarray(
-            [[d[k] for k in ['x1','x2','y1','y2']] for d in ds])
+            [[d[k] for k in ['y1','x1','y2','x2']] for d in ds])
         klass = numpy.asarray([d['class'] for d in ds])
 
         boxes = numpy.expand_dims(boxes, 0)
