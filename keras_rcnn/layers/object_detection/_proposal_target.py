@@ -3,8 +3,6 @@ import keras.engine
 
 import keras_rcnn.backend
 
-import tensorflow
-
 
 class ProposalTarget(keras.layers.Layer):
     """
@@ -37,6 +35,7 @@ class ProposalTarget(keras.layers.Layer):
 
         # Include ground-truth boxes in the set of candidate rois
         zeros = keras.backend.zeros((keras.backend.int_shape(gt_boxes)[0], 1), dtype=gt_boxes.dtype)
+
         all_rois = keras.backend.vstack(
             (all_rois, keras.backend.hstack((zeros, gt_boxes)))
         )
@@ -51,10 +50,7 @@ class ProposalTarget(keras.layers.Layer):
         return [rois, labels, bbox_targets]
 
     def compute_output_shape(self, input_shape):
-        return [(None), (None, 1), (None, 4)]
+        return [(None,), (None, 1), (None, 4)]
 
     def compute_mask(self, inputs, mask=None):
-        # unfortunately this is required
-        return 3 * [None]
-
-
+        return [None, None, None]
