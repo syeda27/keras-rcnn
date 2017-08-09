@@ -5,6 +5,30 @@ import keras_rcnn.backend
 RPN_FG_FRACTION = 0.5
 RPN_BATCHSIZE = 256
 
+def gather_nd(params, indices):
+    return tensorflow.gather_nd(params, indices)
+
+def matmul(
+    a,
+    b,
+    transpose_a=False,
+    transpose_b=False,
+    adjoint_a=False,
+    adjoint_b=False,
+    a_is_sparse=False,
+    b_is_sparse=False
+):
+    return tensorflow.matmul(
+        a,
+        b,
+        transpose_a=transpose_a,
+        transpose_b=transpose_b,
+        adjoint_a=adjoint_a,
+        adjoint_b=adjoint_b,
+        a_is_sparse=a_is_sparse,
+        b_is_sparse=b_is_sparse
+    )
+
 #TODO: remove globals
 def argsort(a, axis=-1):
     _, indices = tensorflow.nn.top_k(a, keras.backend.shape(a)[-1])
