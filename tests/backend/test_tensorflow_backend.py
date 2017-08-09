@@ -210,12 +210,10 @@ def test_get_bbox_regression_labels():
     bbox_targets = keras.backend.eval(bbox_targets)
 
     assert bbox_targets.shape == (10, 4 * num_classes)
-'''
-def test_sample_rois():
 
+def test_sample_rois():
     fg_rois_per_image = 0.5
     rois_per_image = 300
     num_classes = 3
     fg_thresh = 0.7
     labels, rois, bbox_targets = keras_rcnn.backend.sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, num_classes, fg_thresh, bg_thresh_hi, bg_thresh_lo)
-'''
