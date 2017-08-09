@@ -28,13 +28,11 @@ class RCNN(keras.models.Model):
         rpn_classification = keras.layers.Conv2D(num_anchors * 2, kernel_size=(1, 1), activation="sigmoid", name="rpn_cls_prob")(rpn_conv)
         rpn_regression     = keras.layers.Conv2D(num_anchors * 4, kernel_size=(1, 1), name="rpn_bbox_pred")(rpn_conv)
 
-        rpn_prediction = keras.layers.concatenate([rpn_classification, rpn_regression])
+        proposals                        = keras_rcnn.layers.ObjectProposal(maximum_proposals=rois, name="proposals")([im_info, rpn_regression, rpn_classification])
+        rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.AnchorTarget(name="anchor_target")([rpn_classification, gt_boxes, image])
 
-        proposals                        = keras_rcnn.layers.ObjectProposal(maximum_proposals=rois)([im_info, rpn_regression, rpn_classification])
-        rpn_labels, rpn_bbox_reg_targets = keras_rcnn.layers.AnchorTarget()([gt_boxes, im_info])
-
-        rpn_classification_loss = keras_rcnn.layers.ClassificationLoss(anchors=num_anchors, name="rpn_classification_loss")([rpn_labels, rpn_classification])
-        #rpn_regression_loss     = keras_rcnn.layers.RegressionLoss(name="rpn_bbox_loss")([rpn_bbox_reg_targets, rpn_regression])
+        rpn_classification_loss = keras_rcnn.layers.ClassificationLoss(anchors=num_anchors, name="rpn_classification_loss")([rpn_classification, rpn_labels])
+        rpn_regression_loss     = keras_rcnn.layers.RegressionLoss(anchors=num_anchors, name="rpn_bbox_loss")([rpn_regression, rpn_bbox_reg_targets, rpn_labels])
 
         # Apply the classifiers on the proposed regions
         slices = keras_rcnn.layers.ROI((7, 7))([image, proposals])
